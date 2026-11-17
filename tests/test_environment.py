@@ -1,4 +1,5 @@
 import asyncio
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -136,6 +137,13 @@ def test_allowlist_network_is_rejected(tmp_path):
         make_env(tmp_path, network_policy=policy)
 
 
+PREFLIGHT_ERROR = re.escape(
+    "Tenki requires LUXOR_API_KEY (or LUXOR_AUTH_TOKEN); "
+    "TENKI_API_KEY and TENKI_AUTH_TOKEN also work. "
+    "Create a key at https://tenki.cloud/docs/account/api-keys."
+)
+
+
 def clear_auth_env(monkeypatch):
     for name in tenki_env._AUTH_ENV_VARS:
         monkeypatch.delenv(name, raising=False)
@@ -143,7 +151,7 @@ def clear_auth_env(monkeypatch):
 
 def test_preflight_requires_api_key(monkeypatch):
     clear_auth_env(monkeypatch)
-    with pytest.raises(SystemExit, match="TENKI_API_KEY"):
+    with pytest.raises(SystemExit, match=PREFLIGHT_ERROR):
         TenkiEnvironment.preflight()
     monkeypatch.setenv("TENKI_API_KEY", "tk_test")
     TenkiEnvironment.preflight()
@@ -189,7 +197,7 @@ def test_unprefixed_luxor_api_key_falls_back_to_tenki(monkeypatch):
 def test_unprefixed_luxor_api_key_alone_is_missing(monkeypatch, value):
     clear_auth_env(monkeypatch)
     monkeypatch.setenv("LUXOR_API_KEY", value)
-    with pytest.raises(SystemExit, match="TENKI_API_KEY"):
+    with pytest.raises(SystemExit, match=PREFLIGHT_ERROR):
         TenkiEnvironment.preflight()
 
 

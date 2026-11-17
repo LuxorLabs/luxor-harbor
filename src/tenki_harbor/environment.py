@@ -174,7 +174,8 @@ class TenkiEnvironment(BaseEnvironment):
     def preflight(cls) -> None:
         if _env_credential() is None:
             raise SystemExit(
-                "Tenki requires TENKI_API_KEY (or TENKI_AUTH_TOKEN). "
+                "Tenki requires LUXOR_API_KEY (or LUXOR_AUTH_TOKEN); "
+                "TENKI_API_KEY and TENKI_AUTH_TOKEN also work. "
                 "Create a key at https://tenki.cloud/docs/account/api-keys."
             )
 
