@@ -136,23 +136,67 @@ def test_allowlist_network_is_rejected(tmp_path):
         make_env(tmp_path, network_policy=policy)
 
 
+def clear_auth_env(monkeypatch):
+    for name in tenki_env._AUTH_ENV_VARS:
+        monkeypatch.delenv(name, raising=False)
+
+
 def test_preflight_requires_api_key(monkeypatch):
-    monkeypatch.delenv("LUXORAI_AUTH_TOKEN", raising=False)
-    monkeypatch.delenv("LUXORAI_API_KEY", raising=False)
-    monkeypatch.delenv("TENKI_API_KEY", raising=False)
-    monkeypatch.delenv("TENKI_AUTH_TOKEN", raising=False)
+    clear_auth_env(monkeypatch)
     with pytest.raises(SystemExit, match="TENKI_API_KEY"):
         TenkiEnvironment.preflight()
     monkeypatch.setenv("TENKI_API_KEY", "tk_test")
     TenkiEnvironment.preflight()
 
 
-@pytest.mark.parametrize("var", ["LUXORAI_API_KEY", "LUXORAI_AUTH_TOKEN"])
-def test_preflight_accepts_luxorai_credentials(monkeypatch, var):
-    for name in ("LUXORAI_AUTH_TOKEN", "LUXORAI_API_KEY", "TENKI_API_KEY", "TENKI_AUTH_TOKEN"):
-        monkeypatch.delenv(name, raising=False)
+@pytest.mark.parametrize("var", ["LUXOR_API_KEY", "LUXOR_AUTH_TOKEN"])
+def test_preflight_accepts_luxor_credentials(monkeypatch, var):
+    clear_auth_env(monkeypatch)
     monkeypatch.setenv(var, "lx_test")
     TenkiEnvironment.preflight()
+
+
+def test_credential_precedence(monkeypatch):
+    clear_auth_env(monkeypatch)
+    monkeypatch.setenv("TENKI_API_KEY", "tk_legacy_key")
+    assert tenki_env._env_credential() == "tk_legacy_key"
+    monkeypatch.setenv("TENKI_AUTH_TOKEN", "legacy-token")
+    assert tenki_env._env_credential() == "legacy-token"
+    monkeypatch.setenv("LUXOR_API_KEY", "lx_key")
+    assert tenki_env._env_credential() == "lx_key"
+    monkeypatch.setenv("LUXOR_AUTH_TOKEN", "token")
+    assert tenki_env._env_credential() == "token"
+
+
+@pytest.mark.parametrize("value", ["lx_key", "tk_key", "  lx_key\n"])
+def test_luxor_api_key_with_known_prefix_is_used(monkeypatch, value):
+    clear_auth_env(monkeypatch)
+    monkeypatch.setenv("LUXOR_API_KEY", value)
+    monkeypatch.setenv("TENKI_API_KEY", "tk_legacy")
+    assert tenki_env._env_credential() == value.strip()
+    TenkiEnvironment.preflight()
+
+
+def test_unprefixed_luxor_api_key_falls_back_to_tenki(monkeypatch):
+    clear_auth_env(monkeypatch)
+    monkeypatch.setenv("LUXOR_API_KEY", "pool-key-123")
+    monkeypatch.setenv("TENKI_API_KEY", "tk_legacy")
+    assert tenki_env._env_credential() == "tk_legacy"
+    TenkiEnvironment.preflight()
+
+
+@pytest.mark.parametrize("value", ["pool-key-123", "   "])
+def test_unprefixed_luxor_api_key_alone_is_missing(monkeypatch, value):
+    clear_auth_env(monkeypatch)
+    monkeypatch.setenv("LUXOR_API_KEY", value)
+    with pytest.raises(SystemExit, match="TENKI_API_KEY"):
+        TenkiEnvironment.preflight()
+
+
+def test_luxor_auth_token_is_not_prefix_checked(monkeypatch):
+    clear_auth_env(monkeypatch)
+    monkeypatch.setenv("LUXOR_AUTH_TOKEN", "eyJ.jwt")
+    assert tenki_env._env_credential() == "eyJ.jwt"
 
 
 async def test_prebuilt_image_is_pulled_not_built(tmp_path):
@@ -259,8 +303,8 @@ async def test_cancelled_create_keeps_handle_for_cleanup(tmp_path):
     assert FakeSandbox.created[-1].closed
 
 
-async def test_luxorai_snapshot_env_var_wins(tmp_path, monkeypatch):
-    monkeypatch.setenv(tenki_env.LUXORAI_SNAPSHOT_ENV_VAR, "snap-lx")
+async def test_luxor_snapshot_env_var_wins(tmp_path, monkeypatch):
+    monkeypatch.setenv(tenki_env.LUXOR_SNAPSHOT_ENV_VAR, "snap-lx")
     monkeypatch.setenv(tenki_env.SNAPSHOT_ENV_VAR, "snap-tk")
     await started(make_env(tmp_path))
     assert FakeSandbox.create_kwargs["snapshot_id"] == "snap-lx"

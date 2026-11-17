@@ -7,7 +7,7 @@ import asyncio
 
 from tenki import AsyncClient, AsyncSandbox, SandboxError
 
-from tenki_harbor.environment import DOCKER_BOOTSTRAP, SNAPSHOT_ENV_VAR
+from tenki_harbor.environment import DOCKER_BOOTSTRAP, LUXOR_SNAPSHOT_ENV_VAR
 
 HARBOR_TAG = "harbor"
 # Restores can grow a snapshot's CPU, memory and disk but not shrink them, so
@@ -77,7 +77,7 @@ async def _prepare(name: str) -> int:
     finally:
         await sandbox.close_if_open()
     print(f"Snapshot {snapshot.id} is ready. Use it with:\n")
-    print(f"  export {SNAPSHOT_ENV_VAR}={snapshot.id}")
+    print(f"  export {LUXOR_SNAPSHOT_ENV_VAR}={snapshot.id}")
     return 0
 
 

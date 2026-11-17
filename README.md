@@ -11,7 +11,7 @@ adds Tenki as a place to run those trials: every trial gets its own Tenki VM.
 
 ```bash
 git clone <this repo> && cd tenki-harbor && uv sync   # not on PyPI yet
-export TENKI_API_KEY=tk_...
+export LUXOR_API_KEY=lx_...   # or TENKI_API_KEY=tk_...
 
 # Sanity check with the reference solution (no model needed)
 uv run harbor run -t hello-world/hello-world -e tenki_harbor:TenkiEnvironment --agent oracle
@@ -56,7 +56,7 @@ Docker install (median setup on Terminal-Bench drops from 28 s to 19 s):
 
 ```bash
 uv run tenki-harbor prepare
-export TENKI_HARBOR_SNAPSHOT_ID=<printed snapshot id>
+export LUXOR_HARBOR_SNAPSHOT_ID=<printed snapshot id>
 ```
 
 ## Terminal-Bench 2.0 results
@@ -65,35 +65,39 @@ Harbor's `oracle` agent (each task's reference solution) on Tenki production,
 all 89 tasks, 16 trials at a time: **79 pass**. The other 10 fail for reasons in
 the tasks themselves, not the environment:
 
-| Reason | Tasks |
-|---|---|
-| Pinned apt/CRAN packages no longer published | `qemu-startup`, `qemu-alpine-ssh`, `make-doom-for-mips`, `build-pmars`, `rstan-to-pystan`, `mcmc-sampling-stan` |
-| Oracle also fails on local Docker | `protein-assembly`, `build-cython-ext` |
-| Upstream site returns 403 | `build-pov-ray` |
-| Intermittent gloo hang in the full suite (each test passes on its own) | `torch-tensor-parallelism` |
+| Reason                                                                 | Tasks                                                                                                           |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Pinned apt/CRAN packages no longer published                           | `qemu-startup`, `qemu-alpine-ssh`, `make-doom-for-mips`, `build-pmars`, `rstan-to-pystan`, `mcmc-sampling-stan` |
+| Oracle also fails on local Docker                                      | `protein-assembly`, `build-cython-ext`                                                                          |
+| Upstream site returns 403                                              | `build-pov-ray`                                                                                                 |
+| Intermittent gloo hang in the full suite (each test passes on its own) | `torch-tensor-parallelism`                                                                                      |
 
 ## Options
 
 Pass with `--ek key=value` or under `environment.kwargs` in a job config.
 
-| Option | Default | |
-|---|---|---|
-| `max_duration_sec` | `7200` | Hard VM lifetime, so a crashed run can't leak a VM. Capped by the workspace limit. |
-| `disk_size_gb` | task storage + 30 GB, min 50 | VM disk, which also holds the image layers. |
-| `image` / `snapshot_id` | `TENKI_HARBOR_SNAPSHOT_ID`, else the Tenki base image | Start from a Tenki image or snapshot, e.g. one from `tenki-harbor prepare`. |
-| `base_url` | `TENKI_API_ENDPOINT` or `https://api.tenki.cloud` | Tenki API endpoint. |
+| Option                  | Default                                                                                |                                                                                    |
+| ----------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `max_duration_sec`      | `7200`                                                                                 | Hard VM lifetime, so a crashed run can't leak a VM. Capped by the workspace limit. |
+| `disk_size_gb`          | task storage + 30 GB, min 50                                                           | VM disk, which also holds the image layers.                                        |
+| `image` / `snapshot_id` | `LUXOR_HARBOR_SNAPSHOT_ID`, else `TENKI_HARBOR_SNAPSHOT_ID`, else the Tenki base image | Start from a Tenki image or snapshot, e.g. one from `tenki-harbor prepare`.        |
+| `base_url`              | `LUXOR_API_ENDPOINT`, else `TENKI_API_ENDPOINT`, else `https://api.tenki.cloud`        | Tenki API endpoint.                                                                |
+
+Credentials are read from `LUXOR_AUTH_TOKEN`, `LUXOR_API_KEY`, `TENKI_AUTH_TOKEN`
+and `TENKI_API_KEY`, in that order. `LUXOR_API_KEY` is only used when it starts
+with `lx_` or `tk_`; any other value is ignored.
 
 ## Supported today
 
-| Feature | Status |
-|---|---|
-| Prebuilt `docker_image` tasks (all of Terminal-Bench 2.0) | Yes |
-| Dockerfile tasks (built in the VM) | Yes |
-| `network_mode = "no-network"`, including switching between phases | Yes |
-| `docker-compose.yaml` tasks | Not yet; rejected with a clear error |
-| Network allowlists | Not yet; rejected |
-| GPUs, Windows | No |
-| Up to 16 vCPU, 64 GB memory, 100 GB disk per trial | Larger tasks are rejected, not shrunk |
+| Feature                                                           | Status                                |
+| ----------------------------------------------------------------- | ------------------------------------- |
+| Prebuilt `docker_image` tasks (all of Terminal-Bench 2.0)         | Yes                                   |
+| Dockerfile tasks (built in the VM)                                | Yes                                   |
+| `network_mode = "no-network"`, including switching between phases | Yes                                   |
+| `docker-compose.yaml` tasks                                       | Not yet; rejected with a clear error  |
+| Network allowlists                                                | Not yet; rejected                     |
+| GPUs, Windows                                                     | No                                    |
+| Up to 16 vCPU, 64 GB memory, 100 GB disk per trial                | Larger tasks are rejected, not shrunk |
 
 ## Cleanup
 
