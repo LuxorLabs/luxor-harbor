@@ -81,7 +81,7 @@ Pass with `--ek key=value` or under `environment.kwargs` in a job config.
 | `max_duration_sec`      | `7200`                                                                                 | Hard VM lifetime, so a crashed run can't leak a VM. Capped by the workspace limit. |
 | `disk_size_gb`          | task storage + 30 GB, min 50                                                           | VM disk, which also holds the image layers.                                        |
 | `image` / `snapshot_id` | `LUXOR_HARBOR_SNAPSHOT_ID`, else `TENKI_HARBOR_SNAPSHOT_ID`, else the Tenki base image | Start from a Tenki image or snapshot, e.g. one from `tenki-harbor prepare`.        |
-| `base_url`              | `LUXOR_API_ENDPOINT`, else `TENKI_API_ENDPOINT`, else `https://api.tenki.cloud`        | Tenki API endpoint.                                                                |
+| `base_url`              | `LUXOR_API_ENDPOINT`, else `TENKI_API_ENDPOINT`, else `https://api.luxor.ai`           | Tenki API endpoint.                                                                |
 
 Credentials are read from `LUXOR_AUTH_TOKEN`, `LUXOR_API_KEY`, `TENKI_AUTH_TOKEN`
 and `TENKI_API_KEY`, in that order. `LUXOR_API_KEY` is only used when it starts
