@@ -98,11 +98,9 @@ def _session_name(session_id: str) -> str:
 
 def _env_credential() -> str | None:
     for var in _AUTH_ENV_VARS:
-        value = os.environ.get(var)
-        if var == "LUXOR_API_KEY" and value:
-            value = value.strip()
-            if not value.startswith(_LUXOR_API_KEY_PREFIXES):
-                continue
+        value = (os.environ.get(var) or "").strip()
+        if var == "LUXOR_API_KEY" and not value.startswith(_LUXOR_API_KEY_PREFIXES):
+            continue
         if value:
             return value
     return None

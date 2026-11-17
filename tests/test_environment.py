@@ -201,6 +201,24 @@ def test_unprefixed_luxor_api_key_alone_is_missing(monkeypatch, value):
         TenkiEnvironment.preflight()
 
 
+@pytest.mark.parametrize(
+    "var", ["LUXOR_AUTH_TOKEN", "LUXOR_API_KEY", "TENKI_AUTH_TOKEN", "TENKI_API_KEY"]
+)
+def test_whitespace_only_credential_is_missing(monkeypatch, var):
+    clear_auth_env(monkeypatch)
+    monkeypatch.setenv(var, "  \n")
+    assert tenki_env._env_credential() is None
+    with pytest.raises(SystemExit, match=PREFLIGHT_ERROR):
+        TenkiEnvironment.preflight()
+
+
+def test_whitespace_only_credential_falls_through(monkeypatch):
+    clear_auth_env(monkeypatch)
+    monkeypatch.setenv("LUXOR_AUTH_TOKEN", "   ")
+    monkeypatch.setenv("TENKI_API_KEY", " tk_legacy ")
+    assert tenki_env._env_credential() == "tk_legacy"
+
+
 def test_luxor_auth_token_is_not_prefix_checked(monkeypatch):
     clear_auth_env(monkeypatch)
     monkeypatch.setenv("LUXOR_AUTH_TOKEN", "eyJ.jwt")
