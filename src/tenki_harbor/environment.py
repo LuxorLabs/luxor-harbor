@@ -7,7 +7,8 @@ every Harbor operation is routed to that container with ``docker exec`` /
 ``docker cp``.
 
 Use with ``harbor run -e tenki_harbor:TenkiEnvironment``. Auth comes from
-``TENKI_API_KEY`` (or ``TENKI_AUTH_TOKEN``).
+``LUXOR_API_KEY`` (or ``LUXOR_AUTH_TOKEN``), else ``TENKI_API_KEY`` (or
+``TENKI_AUTH_TOKEN``).
 """
 
 from __future__ import annotations
@@ -39,9 +40,11 @@ from tenki import AsyncSandbox, CommandTimeoutError
 CONTAINER = "main"
 SNAPSHOT_ENV_VAR = "TENKI_HARBOR_SNAPSHOT_ID"
 # Read before SNAPSHOT_ENV_VAR.
-LUXORAI_SNAPSHOT_ENV_VAR = "LUXORAI_HARBOR_SNAPSHOT_ID"
-# Same names the tenki SDK resolves credentials from.
-_AUTH_ENV_VARS = ("LUXORAI_AUTH_TOKEN", "LUXORAI_API_KEY", "TENKI_AUTH_TOKEN", "TENKI_API_KEY")
+LUXOR_SNAPSHOT_ENV_VAR = "LUXOR_HARBOR_SNAPSHOT_ID"
+# Same names the tenki SDK resolves credentials from, in the same order.
+_AUTH_ENV_VARS = ("LUXOR_AUTH_TOKEN", "LUXOR_API_KEY", "TENKI_AUTH_TOKEN", "TENKI_API_KEY")
+# LUXOR_API_KEY may hold a Luxor Mining Pool key, so only these prefixes count.
+_LUXOR_API_KEY_PREFIXES = ("lx_", "tk_")
 HARBOR_DIR = "/home/tenki/.harbor"
 XFER_DIR = f"{HARBOR_DIR}/xfer"
 BUILD_DIR = f"{HARBOR_DIR}/build"
@@ -93,6 +96,16 @@ def _session_name(session_id: str) -> str:
     return name[:63].rstrip("-") or "harbor"
 
 
+def _env_credential() -> str | None:
+    for var in _AUTH_ENV_VARS:
+        value = (os.environ.get(var) or "").strip()
+        if var == "LUXOR_API_KEY" and not value.startswith(_LUXOR_API_KEY_PREFIXES):
+            continue
+        if value:
+            return value
+    return None
+
+
 def _image_tag(environment_name: str) -> str:
     name = re.sub(r"[^a-z0-9._-]+", "-", environment_name.lower()).strip("-.")
     return f"hb__{name or 'task'}"
@@ -105,7 +118,8 @@ class TenkiEnvironment(BaseEnvironment):
 
     - ``image`` / ``snapshot_id``: start the VM from a Tenki image or snapshot
       instead of the default base. ``tenki-harbor prepare`` builds a snapshot
-      with Docker installed; ``TENKI_HARBOR_SNAPSHOT_ID`` sets it by default.
+      with Docker installed; ``LUXOR_HARBOR_SNAPSHOT_ID`` (or
+      ``TENKI_HARBOR_SNAPSHOT_ID``) sets it by default.
     - ``disk_size_gb``: VM disk; defaults to the task's storage plus room for
       image layers.
     - ``max_duration_sec``: hard lifetime of the VM, so a crashed Harbor run
@@ -127,7 +141,7 @@ class TenkiEnvironment(BaseEnvironment):
             raise ValueError("Pass at most one of image and snapshot_id.")
         if not image and not snapshot_id:
             snapshot_id = (
-                os.environ.get(LUXORAI_SNAPSHOT_ENV_VAR) or os.environ.get(SNAPSHOT_ENV_VAR) or None
+                os.environ.get(LUXOR_SNAPSHOT_ENV_VAR) or os.environ.get(SNAPSHOT_ENV_VAR) or None
             )
         self._tenki_image = image
         self._snapshot_id = snapshot_id
@@ -156,9 +170,10 @@ class TenkiEnvironment(BaseEnvironment):
     @classmethod
     @override
     def preflight(cls) -> None:
-        if not any(os.environ.get(var) for var in _AUTH_ENV_VARS):
+        if _env_credential() is None:
             raise SystemExit(
-                "Tenki requires TENKI_API_KEY (or TENKI_AUTH_TOKEN). "
+                "Tenki requires LUXOR_API_KEY (or LUXOR_AUTH_TOKEN); "
+                "TENKI_API_KEY and TENKI_AUTH_TOKEN also work. "
                 "Create a key at https://tenki.cloud/docs/account/api-keys."
             )
 
