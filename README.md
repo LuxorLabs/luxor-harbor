@@ -10,14 +10,14 @@ adds Luxor as a place to run those trials: every trial gets its own Luxor VM.
 ## Quickstart
 
 ```bash
-git clone <this repo> && cd tenki-harbor && uv sync   # not on PyPI yet
+git clone <this repo> && cd luxor-harbor && uv sync   # not on PyPI yet
 export LUXOR_API_KEY=lx_...   # or TENKI_API_KEY=tk_...
 
 # Sanity check with the reference solution (no model needed)
 uv run harbor run -t hello-world/hello-world -e luxor_harbor:LuxorEnvironment --agent oracle
 ```
 
-The earlier names still work: `tenki_harbor:TenkiEnvironment` and the `tenki-harbor` command.
+The earlier names still work: `tenki_harbor:TenkiEnvironment` and the `tenki-harbor` command. Until 0.2.0 the package itself was named `tenki-harbor`; dependency lines that name it now need `luxor-harbor`.
 
 Run one model across several harnesses on Terminal-Bench 2.0:
 
