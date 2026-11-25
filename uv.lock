@@ -1106,6 +1106,35 @@ wheels = [
 ]
 
 [[package]]
+name = "luxor-harbor"
+version = "0.2.0"
+source = { editable = "." }
+dependencies = [
+    { name = "harbor" },
+    { name = "tenki", extra = ["async"] },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "harbor", specifier = ">=0.23.0,<0.24" },
+    { name = "tenki", extras = ["async"], specifier = ">=1.5.3,<2" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-asyncio", specifier = ">=0.24" },
+    { name = "ruff", specifier = ">=0.6" },
+]
+
+[[package]]
 name = "markdown-it-py"
 version = "4.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2218,35 +2247,6 @@ wheels = [
 [package.optional-dependencies]
 async = [
     { name = "websockets" },
-]
-
-[[package]]
-name = "tenki-harbor"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "harbor" },
-    { name = "tenki", extra = ["async"] },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "harbor", specifier = ">=0.23.0,<0.24" },
-    { name = "tenki", extras = ["async"], specifier = ">=1.5.3,<2" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8" },
-    { name = "pytest-asyncio", specifier = ">=0.24" },
-    { name = "ruff", specifier = ">=0.6" },
 ]
 
 [[package]]

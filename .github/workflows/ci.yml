@@ -35,7 +35,7 @@ jobs:
         run: test -n "$TENKI_API_KEY" || { echo "Set the TENKI_API_KEY repository secret."; exit 1; }
       - run: uv run pytest -m live
       - name: Harbor smoke test
-        run: uv run harbor run -t hello-world/hello-world -e tenki_harbor:TenkiEnvironment --agent oracle -o jobs
+        run: uv run harbor run -t hello-world/hello-world -e luxor_harbor:LuxorEnvironment --agent oracle -o jobs
       - name: Terminate leftover VMs
         if: always()
-        run: uv run tenki-harbor cleanup
+        run: uv run luxor-harbor cleanup

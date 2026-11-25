@@ -1,6 +1,6 @@
 [project]
-name = "tenki-harbor"
-version = "0.1.0"
+name = "luxor-harbor"
+version = "0.2.0"
 description = "Run Harbor agent evaluations on Luxor Sandbox VMs"
 readme = "README.md"
 requires-python = ">=3.12"
