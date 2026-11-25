@@ -1,4 +1,4 @@
-# tenki-harbor
+# luxor-harbor
 
 Run [Harbor](https://github.com/harbor-framework/harbor) agent evaluations on
 [Luxor Sandbox](https://tenki.cloud/docs/sandbox) VMs.
