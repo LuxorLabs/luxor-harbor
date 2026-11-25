@@ -1,7 +1,7 @@
 [project]
 name = "tenki-harbor"
 version = "0.1.0"
-description = "Run Harbor agent evaluations on Tenki Sandbox VMs"
+description = "Run Harbor agent evaluations on Luxor Sandbox VMs"
 readme = "README.md"
 requires-python = ">=3.12"
 license = "Apache-2.0"
@@ -22,11 +22,11 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/tenki_harbor"]
+packages = ["src/tenki_harbor", "src/luxor_harbor"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-markers = ["live: hits Tenki production; needs TENKI_API_KEY"]
+markers = ["live: hits Luxor production; needs TENKI_API_KEY"]
 addopts = "-m 'not live'"
 
 [tool.ruff]
@@ -36,4 +36,5 @@ line-length = 100
 select = ["E", "F", "I", "UP", "B"]
 
 [project.scripts]
+luxor-harbor = "tenki_harbor.cli:main"
 tenki-harbor = "tenki_harbor.cli:main"
