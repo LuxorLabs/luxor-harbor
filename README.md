@@ -1,11 +1,11 @@
 # tenki-harbor
 
 Run [Harbor](https://github.com/harbor-framework/harbor) agent evaluations on
-[Tenki Sandbox](https://tenki.cloud/docs/sandbox) VMs.
+[Luxor Sandbox](https://tenki.cloud/docs/sandbox) VMs.
 
 Harbor runs coding-agent harnesses (Codex, OpenCode, Claude Code, mini-swe-agent,
 Terminus, …) against graded benchmarks such as Terminal-Bench 2.0. This package
-adds Tenki as a place to run those trials: every trial gets its own Tenki VM.
+adds Luxor as a place to run those trials: every trial gets its own Luxor VM.
 
 ## Quickstart
 
@@ -14,8 +14,10 @@ git clone <this repo> && cd tenki-harbor && uv sync   # not on PyPI yet
 export LUXOR_API_KEY=lx_...   # or TENKI_API_KEY=tk_...
 
 # Sanity check with the reference solution (no model needed)
-uv run harbor run -t hello-world/hello-world -e tenki_harbor:TenkiEnvironment --agent oracle
+uv run harbor run -t hello-world/hello-world -e luxor_harbor:LuxorEnvironment --agent oracle
 ```
+
+The earlier names still work: `tenki_harbor:TenkiEnvironment` and the `tenki-harbor` command.
 
 Run one model across several harnesses on Terminal-Bench 2.0:
 
@@ -30,17 +32,17 @@ uv run harbor view jobs/harness-matrix     # pass rates and full agent trajector
 Any harness can also be run on its own:
 
 ```bash
-uv run harbor run -d terminal-bench@2.0 -e tenki_harbor:TenkiEnvironment \
+uv run harbor run -d terminal-bench@2.0 -e luxor_harbor:LuxorEnvironment \
   --agent codex --model openai/your-model-id --n-concurrent 16 \
   --ae OPENAI_BASE_URL=$OPENAI_BASE_URL --ae OPENAI_API_KEY=$OPENAI_API_KEY
 ```
 
 ## How it works
 
-Tenki VMs boot Tenki images, not OCI images, so the task's container runs under
+Luxor VMs boot Luxor images, not OCI images, so the task's container runs under
 Docker inside the VM:
 
-1. Create a Tenki session sized to the task (`cpus`, `memory_mb`, `storage_mb`).
+1. Create a Luxor session sized to the task (`cpus`, `memory_mb`, `storage_mb`).
 2. Install and start Docker in the VM (about 12 s on the base image).
 3. `docker pull` the task's `docker_image`, or `docker build` its Dockerfile.
 4. Route Harbor's `exec` and file transfers into that container with
@@ -51,17 +53,17 @@ Sessions are tagged `harbor` and carry the Harbor session id in their metadata.
 
 ## Faster startup
 
-Bake Docker into a Tenki snapshot once per workspace, and every trial skips the
+Bake Docker into a Luxor snapshot once per workspace, and every trial skips the
 Docker install (median setup on Terminal-Bench drops from 28 s to 19 s):
 
 ```bash
-uv run tenki-harbor prepare
+uv run luxor-harbor prepare
 export LUXOR_HARBOR_SNAPSHOT_ID=<printed snapshot id>
 ```
 
 ## Terminal-Bench 2.0 results
 
-Harbor's `oracle` agent (each task's reference solution) on Tenki production,
+Harbor's `oracle` agent (each task's reference solution) on Luxor production,
 all 89 tasks, 16 trials at a time: **79 pass**. The other 10 fail for reasons in
 the tasks themselves, not the environment:
 
@@ -80,8 +82,8 @@ Pass with `--ek key=value` or under `environment.kwargs` in a job config.
 | ----------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | `max_duration_sec`      | `7200`                                                                                 | Hard VM lifetime, so a crashed run can't leak a VM. Capped by the workspace limit. |
 | `disk_size_gb`          | task storage + 30 GB, min 50                                                           | VM disk, which also holds the image layers.                                        |
-| `image` / `snapshot_id` | `LUXOR_HARBOR_SNAPSHOT_ID`, else `TENKI_HARBOR_SNAPSHOT_ID`, else the Tenki base image | Start from a Tenki image or snapshot, e.g. one from `tenki-harbor prepare`.        |
-| `base_url`              | `LUXOR_API_ENDPOINT`, else `TENKI_API_ENDPOINT`, else `https://api.luxor.ai`           | Tenki API endpoint.                                                                |
+| `image` / `snapshot_id` | `LUXOR_HARBOR_SNAPSHOT_ID`, else `TENKI_HARBOR_SNAPSHOT_ID`, else the Luxor base image | Start from a Luxor image or snapshot, e.g. one from `luxor-harbor prepare`.        |
+| `base_url`              | `LUXOR_API_ENDPOINT`, else `TENKI_API_ENDPOINT`, else `https://api.luxor.ai`           | Luxor API endpoint.                                                                |
 
 Credentials are read from `LUXOR_AUTH_TOKEN`, `LUXOR_API_KEY`, `TENKI_AUTH_TOKEN`
 and `TENKI_API_KEY`, in that order. `LUXOR_API_KEY` is only used when it starts
@@ -105,8 +107,8 @@ If a Harbor process is killed, its VMs still stop at `max_duration_sec`. To
 end them sooner:
 
 ```bash
-uv run tenki-harbor sessions   # list active Harbor sessions
-uv run tenki-harbor cleanup    # terminate them
+uv run luxor-harbor sessions   # list active Harbor sessions
+uv run luxor-harbor cleanup    # terminate them
 ```
 
 ## Development
@@ -114,6 +116,6 @@ uv run tenki-harbor cleanup    # terminate them
 ```bash
 uv sync
 uv run pytest                                 # unit tests, offline
-TENKI_API_KEY=tk_... uv run pytest -m live    # creates real Tenki VMs
+TENKI_API_KEY=tk_... uv run pytest -m live    # creates real Luxor VMs
 uv run ruff check . && uv run ruff format .
 ```

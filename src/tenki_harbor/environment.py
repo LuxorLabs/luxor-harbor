@@ -1,12 +1,13 @@
-"""Harbor environment backed by Tenki Sandbox VMs.
+"""Harbor environment backed by Luxor Sandbox VMs.
 
-Each trial gets one Tenki session (a full Ubuntu VM). Tenki cannot boot OCI
+Each trial gets one Luxor session (a full Ubuntu VM). Luxor cannot boot OCI
 images, so the task's container runs under Docker inside the VM: prebuilt
 ``docker_image`` tasks are pulled, Dockerfile tasks are built in the VM, and
 every Harbor operation is routed to that container with ``docker exec`` /
 ``docker cp``.
 
-Use with ``harbor run -e tenki_harbor:TenkiEnvironment``. Auth comes from
+Use with ``harbor run -e luxor_harbor:LuxorEnvironment``; the earlier
+``tenki_harbor:TenkiEnvironment`` still works. Auth comes from
 ``LUXOR_API_KEY`` (or ``LUXOR_AUTH_TOKEN``), else ``TENKI_API_KEY`` (or
 ``TENKI_AUTH_TOKEN``).
 """
@@ -111,20 +112,20 @@ def _image_tag(environment_name: str) -> str:
     return f"hb__{name or 'task'}"
 
 
-class TenkiEnvironment(BaseEnvironment):
-    """Runs a Harbor task's container under Docker inside a Tenki VM.
+class LuxorEnvironment(BaseEnvironment):
+    """Runs a Harbor task's container under Docker inside a Luxor VM.
 
     Environment kwargs (``--ek key=value``):
 
-    - ``image`` / ``snapshot_id``: start the VM from a Tenki image or snapshot
-      instead of the default base. ``tenki-harbor prepare`` builds a snapshot
+    - ``image`` / ``snapshot_id``: start the VM from a Luxor image or snapshot
+      instead of the default base. ``luxor-harbor prepare`` builds a snapshot
       with Docker installed; ``LUXOR_HARBOR_SNAPSHOT_ID`` (or
       ``TENKI_HARBOR_SNAPSHOT_ID``) sets it by default.
     - ``disk_size_gb``: VM disk; defaults to the task's storage plus room for
       image layers.
     - ``max_duration_sec``: hard lifetime of the VM, so a crashed Harbor run
       cannot leak it. Must cover build + agent + verifier time.
-    - ``base_url``: Tenki API endpoint override.
+    - ``base_url``: Luxor API endpoint override.
     """
 
     def __init__(
@@ -172,7 +173,7 @@ class TenkiEnvironment(BaseEnvironment):
     def preflight(cls) -> None:
         if _env_credential() is None:
             raise SystemExit(
-                "Tenki requires LUXOR_API_KEY (or LUXOR_AUTH_TOKEN); "
+                "Luxor requires LUXOR_API_KEY (or LUXOR_AUTH_TOKEN); "
                 "TENKI_API_KEY and TENKI_AUTH_TOKEN also work. "
                 "Create a key at https://tenki.cloud/docs/account/api-keys."
             )
@@ -181,7 +182,7 @@ class TenkiEnvironment(BaseEnvironment):
     def _validate_definition(self) -> None:
         if (self.environment_dir / "docker-compose.yaml").exists():
             raise ValueError(
-                "Tenki does not support docker-compose tasks yet; "
+                "Luxor does not support docker-compose tasks yet; "
                 "only Dockerfile and docker_image tasks."
             )
         require_agent_environment_definition(
@@ -194,7 +195,7 @@ class TenkiEnvironment(BaseEnvironment):
     def _vm_cpus(self) -> int:
         cpus = math.ceil(self._effective_cpus or DEFAULT_CPUS)
         if cpus > TENKI_MAX_CPUS:
-            raise ValueError(f"Task asks for {cpus} CPUs; Tenki VMs have at most {TENKI_MAX_CPUS}.")
+            raise ValueError(f"Task asks for {cpus} CPUs; Luxor VMs have at most {TENKI_MAX_CPUS}.")
         return max(cpus, 1)
 
     def _vm_memory_mb(self) -> int:
@@ -202,7 +203,7 @@ class TenkiEnvironment(BaseEnvironment):
         if memory_mb > TENKI_MAX_MEMORY_MB:
             raise ValueError(
                 f"Task asks for {memory_mb} MB of memory; "
-                f"Tenki VMs have at most {TENKI_MAX_MEMORY_MB} MB."
+                f"Luxor VMs have at most {TENKI_MAX_MEMORY_MB} MB."
             )
         return max(memory_mb, TENKI_MIN_MEMORY_MB)
 
@@ -215,7 +216,7 @@ class TenkiEnvironment(BaseEnvironment):
             disk_gb = max(DEFAULT_DISK_GB, task_gb + IMAGE_DISK_HEADROOM_GB)
         if disk_gb > TENKI_MAX_DISK_GB:
             raise ValueError(
-                f"Task needs a {disk_gb} GB disk; Tenki VMs have at most {TENKI_MAX_DISK_GB} GB."
+                f"Task needs a {disk_gb} GB disk; Luxor VMs have at most {TENKI_MAX_DISK_GB} GB."
             )
         return max(disk_gb, TENKI_MIN_DISK_GB)
 
@@ -251,14 +252,14 @@ class TenkiEnvironment(BaseEnvironment):
             return
         if not delete:
             self.logger.warning(
-                f"Leaving Tenki session {sandbox.id} running because delete=False; "
+                f"Leaving Luxor session {sandbox.id} running because delete=False; "
                 f"it terminates after max_duration_sec={self._max_duration_sec}."
             )
             return
         try:
             await sandbox.close_if_open()
         except Exception as exc:
-            self.logger.warning(f"Failed to terminate Tenki session {sandbox.id}: {exc}")
+            self.logger.warning(f"Failed to terminate Luxor session {sandbox.id}: {exc}")
         finally:
             self._sandbox = None
 
@@ -293,7 +294,7 @@ class TenkiEnvironment(BaseEnvironment):
             except BaseException:
                 create_task.cancel()
             raise
-        self.logger.debug(f"Created Tenki session {self._sandbox.id}")
+        self.logger.debug(f"Created Luxor session {self._sandbox.id}")
         await self._sandbox.wait_ready(timeout=READY_TIMEOUT_SEC)
 
     async def _pull_image(self, image: str) -> None:
@@ -342,7 +343,7 @@ class TenkiEnvironment(BaseEnvironment):
             case NetworkMode.PUBLIC:
                 argv = ["docker", "network", "connect", "bridge", CONTAINER]
             case _:
-                raise ValueError(f"Tenki cannot enforce network_mode={network_policy.network_mode}")
+                raise ValueError(f"Luxor cannot enforce network_mode={network_policy.network_mode}")
         result = await self._host_exec(argv, timeout_sec=60)
         already = "is not connected" in (result.stderr or "") or "already exists" in (
             result.stderr or ""
@@ -373,7 +374,7 @@ class TenkiEnvironment(BaseEnvironment):
 
     def _require_sandbox(self) -> AsyncSandbox:
         if self._sandbox is None:
-            raise RuntimeError("Tenki session not started. Call start() first.")
+            raise RuntimeError("Luxor session not started. Call start() first.")
         return self._sandbox
 
     async def _host_exec(
@@ -385,7 +386,7 @@ class TenkiEnvironment(BaseEnvironment):
     ) -> ExecResult:
         """Run argv on the VM itself (root by default, for Docker access)."""
         sandbox = self._require_sandbox()
-        # Tenki applies a 30s default when no timeout is passed; Harbor's None means unbounded.
+        # Luxor applies a 30s default when no timeout is passed; Harbor's None means unbounded.
         budget = timeout_sec or self._max_duration_sec
         try:
             result = await sandbox.exec(*argv, timeout=budget, privileged=privileged)
@@ -411,13 +412,13 @@ class TenkiEnvironment(BaseEnvironment):
             ["bash", "-c", script], timeout_sec=timeout_sec, privileged=privileged
         )
         if check and result.return_code != 0:
-            raise RuntimeError(f"Tenki VM command failed: {_tail(result)}")
+            raise RuntimeError(f"Luxor VM command failed: {_tail(result)}")
         return result
 
     # ── File transfer ────────────────────────────────────────────────────
     #
-    # Tenki's file API only reaches /home/tenki, so every transfer is two hops:
-    # local <-> XFER_DIR on the VM (Tenki fs), then XFER_DIR <-> container (docker cp).
+    # Luxor's file API only reaches /home/tenki, so every transfer is two hops:
+    # local <-> XFER_DIR on the VM (Luxor fs), then XFER_DIR <-> container (docker cp).
 
     def _staging_path(self, suffix: str = "") -> str:
         return f"{XFER_DIR}/{uuid4().hex}{suffix}"
@@ -485,6 +486,10 @@ class TenkiEnvironment(BaseEnvironment):
                 extract_dir_from_file(archive, target_dir)
         finally:
             await self._host_shell(f"rm -f {shlex.quote(staged)}", timeout_sec=60)
+
+
+# The name this class was published under; existing commands and configs use it.
+TenkiEnvironment = LuxorEnvironment
 
 
 def _tail(result: ExecResult, limit: int = 2000) -> str:

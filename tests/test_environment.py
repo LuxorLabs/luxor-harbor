@@ -7,8 +7,9 @@ import pytest
 from harbor.models.task.config import EnvironmentConfig, NetworkMode, NetworkPolicy
 from harbor.models.trial.paths import TrialPaths
 
+import luxor_harbor
 import tenki_harbor.environment as tenki_env
-from tenki_harbor import TenkiEnvironment
+from tenki_harbor import LuxorEnvironment, TenkiEnvironment
 
 
 @dataclass
@@ -137,8 +138,13 @@ def test_allowlist_network_is_rejected(tmp_path):
         make_env(tmp_path, network_policy=policy)
 
 
+def test_luxor_and_tenki_names_load_the_same_environment():
+    assert luxor_harbor.LuxorEnvironment is LuxorEnvironment
+    assert TenkiEnvironment is LuxorEnvironment
+
+
 PREFLIGHT_ERROR = re.escape(
-    "Tenki requires LUXOR_API_KEY (or LUXOR_AUTH_TOKEN); "
+    "Luxor requires LUXOR_API_KEY (or LUXOR_AUTH_TOKEN); "
     "TENKI_API_KEY and TENKI_AUTH_TOKEN also work. "
     "Create a key at https://tenki.cloud/docs/account/api-keys."
 )

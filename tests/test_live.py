@@ -1,4 +1,4 @@
-"""Live tests against Tenki production.
+"""Live tests against Luxor production.
 
 Run with ``TENKI_API_KEY=... uv run pytest -m live``. Each test creates and
 terminates real VMs.

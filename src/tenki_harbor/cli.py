@@ -1,4 +1,4 @@
-"""Prepare, inspect and clean up the Tenki sessions Harbor runs on."""
+"""Prepare, inspect and clean up the Luxor sessions Harbor runs on."""
 
 from __future__ import annotations
 
@@ -82,14 +82,14 @@ async def _prepare(name: str) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(prog="tenki-harbor", description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     prepare = commands.add_parser(
-        "prepare", help="Build a Tenki snapshot with Docker installed, for faster trial startup."
+        "prepare", help="Build a Luxor snapshot with Docker installed, for faster trial startup."
     )
     prepare.add_argument("--name", default="harbor-docker-base")
-    commands.add_parser("sessions", help="List active Tenki sessions started by Harbor.")
-    commands.add_parser("cleanup", help="Terminate every active Tenki session started by Harbor.")
+    commands.add_parser("sessions", help="List active Luxor sessions started by Harbor.")
+    commands.add_parser("cleanup", help="Terminate every active Luxor session started by Harbor.")
     args = parser.parse_args()
     if args.command == "prepare":
         raise SystemExit(asyncio.run(_prepare(args.name)))
